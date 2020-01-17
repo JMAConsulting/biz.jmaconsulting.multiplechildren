@@ -155,6 +155,9 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
       if ($mulChild->multiple_child) {
         $form->setDefaults(['multiple_children' => 1]);
       }
+      else {
+        $form->setDefaults(['multiple_children' => 0]);
+      }
     }
     if (empty($templateId) && empty($form->getVar('_templateId'))) {
       // This is not a ministry reportable event, so we show the register multiple children checkbox.
@@ -214,7 +217,7 @@ function multiplechildren_civicrm_post($op, $objectName, $objectId, &$objectRef)
  */
 function multiplechildren_civicrm_postProcess($formName, &$form) {
   if ($formName == "CRM_Event_Form_ManageEvent_EventInfo") {
-    if (!empty($form->_submitValues['multiple_children'])) {
+    if (array_key_exists('multiple_children', $form->_submitValues)) {
       $eventId = CRM_Core_Session::singleton()->get('eventID');
       $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
       $mulChild->event_id = $eventId;
