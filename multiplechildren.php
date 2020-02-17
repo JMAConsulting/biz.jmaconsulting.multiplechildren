@@ -192,7 +192,7 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         foreach ($fields as $fieldName => $fieldLabel) {
           $name = sprintf("%s[%d]", $fieldName, $rowNumber);
           if ($fieldName == 'child_dob') {
-            $form->addDate($fieldName, $fieldLabel, FALSE, ['formatType' => 'activityDate']);
+            $form->add('datepicker', $fieldName, $fieldLabel, ['formatType' => 'activityDate'], FALSE);
           }
           else if ($fieldName == 'child_gender') {
             $form->add('select', $fieldName, $fieldLabel, [1 => 'Male', 2 => 'Female', 3 => 'Other']);
