@@ -159,7 +159,7 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         $form->setDefaults(['multiple_children' => 0]);
       }
     }
-    if (empty($templateId) && empty($form->getVar('_templateId'))) {
+    if (1 || empty($templateId) && empty($form->getVar('_templateId'))) {
       // This is not a ministry reportable event, so we show the register multiple children checkbox.
       $form->addYesNo('multiple_children', ts('Register Multiple Children?'));
       CRM_Core_Region::instance('page-body')->add(array(
@@ -168,7 +168,6 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
     }
   }
   if ($formName == "CRM_Event_Form_Registration_Register") {
-    return;
     $isActive = FALSE;
     if (!empty($form->_eventId)) {
       $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
@@ -178,7 +177,16 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         $isActive = TRUE;
       }
     }
-    if ($isActive) {
+    $priceSetId = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $form->_eventId);
+    // Check if child price set is inactive.
+    $childPrice = $maxTickets = NULL;
+    if (!empty($priceSetId)) {
+      $childPrice = CRM_Core_DAO::executeQuery("SELECT id FROM civicrm_price_field WHERE name LIKE '%Child%' AND price_set_id = %1", [1 => [$priceSetId, "Integer"]])->fetchAll()[0]['id'];
+    }
+    if ($childPrice) {
+      $maxTickets = CRM_Core_DAO::singleValueQuery("SELECT max_value FROM civicrm_max_tickets WHERE price_field_id = %1", [1 => [$childPrice, "Integer"]]);
+    }
+    if ($isActive && (empty($childPrice) || !$maxTickets)) {
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/MultipleChildrenRegister.tpl',
       ));
@@ -189,19 +197,23 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         'child_gender' => ts('Child Gender'),
       ];
       for ($rowNumber = 1; $rowNumber <= 25; $rowNumber++) {
+        $children[$rowNumber] = $rowNumber;
         foreach ($fields as $fieldName => $fieldLabel) {
           $name = sprintf("%s[%d]", $fieldName, $rowNumber);
           if ($fieldName == 'child_dob') {
-            $form->add('datepicker', $fieldName, $fieldLabel, ['formatType' => 'activityDate'], FALSE);
+            $form->add('datepicker', $name, $fieldLabel, ['formatType' => 'activityDate'], FALSE);
           }
           else if ($fieldName == 'child_gender') {
-            $form->add('select', $fieldName, $fieldLabel, [1 => 'Male', 2 => 'Female', 3 => 'Other']);
+            $form->add('select', $name, $fieldLabel, [1 => 'Male', 2 => 'Female', 3 => 'Other']);
           }
           else {
             $form->add('text', $name, $fieldLabel, NULL);
           }
         }
       }
+      $form->add('select', 'multiple_child',
+        ts('Are you bringing children to this event? If so, how many?'), $children, FALSE, array('class' => 'crm-select2 ')
+      );
     }
   }
 }
@@ -224,6 +236,54 @@ function multiplechildren_civicrm_postProcess($formName, &$form) {
       $mulChild->find(TRUE);
       $mulChild->multiple_child = $form->_submitValues['multiple_children'];
       $mulChild->save();
+    }
+  }
+  if ($formName == "CRM_Event_Form_Registration_Confirm") {
+    $participantId = $form->getVar('_participantId');
+    $parent = $form->_values['participant']['participant_contact_id'];
+    $address = civicrm_api3('Address', 'get', ['contact_id' => $parent])['values'];
+    if (!empty($form->_values['params'][$participantId]['multiple_child'])) {
+      for ($i = 1; $i <= $form->_values['params'][$participantId]['multiple_child']; $i++) {
+        $childParams = [
+          'contact_type' => 'Individual', 
+          'first_name' => $form->_values['params'][$participantId]['child_first_name'][$i],
+          'last_name' => $form->_values['params'][$participantId]['child_last_name'][$i],
+        ];
+        $child = civicrm_api3('Contact', 'create', $childParams);
+        $children[] = $child['id'];
+
+        civicrm_api3('Participant', 'create', [
+          'contact_id' => $child['id'],
+          'event_id' => $form->_eventId,
+          'registered_by_id' => $participantId,
+          'status_id' => 17,
+          'role_id' => 1,
+        ]);
+
+        foreach ($address as $k => &$val) {
+          unset($val['id']);
+          $val['contact_id'] = $child['id'];
+          $val['master_id'] = $k;
+          civicrm_api3('Address', 'create', $address[$k]);
+        }
+
+        if (!empty($form->_values['params'][$participantId]['postal_code-Primary'])) {
+
+          list($chapter, $region) = getChapRegCodes($form->_values['params'][$participantId]['postal_code-Primary']);
+          if ($chapter || $region) {
+            $cParams = [
+              'chapter' => $chapter,
+              'region' => $region,
+              'contact_id' => $child['id'],
+            ];
+            setChapRegCodes($cParams);
+          }
+        }
+
+        // Create relationship.
+        $relType = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Child of', 'id', 'name_a_b');
+        createRelationship($child['id'], $parent, $relType);
+      }
     }
   }
 }
