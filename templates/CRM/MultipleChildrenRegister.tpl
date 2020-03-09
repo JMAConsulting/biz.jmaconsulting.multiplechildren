@@ -31,11 +31,26 @@
                     {$form.child_last_name.$rowNumber.html}
                 </div>
             </div>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_dob.$rowNumber.label}
+                </div>
+                <div class="content">
+                    {$form.child_dob.$rowNumber.html}
+                </div>
+            </div>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_gender.$rowNumber.label}
+                </div>
+                <div class="content">
+                    {$form.child_gender.$rowNumber.html}
+                </div>
+            </div>
             <div><a href=# class="remove_item crm-hover-button" style="float:right;"><b>{ts}Remove{/ts}</b></a></div>
         </fieldset>
     </div>
 {/section}
-<span id="add-another-item" class="crm-hover-button hiddenElement" style="font-weight:bold;padding:10px;"><a href=#>{ts}Add another child{/ts}</a></span>
 </fieldset>
 </div>
 
@@ -44,39 +59,39 @@
 CRM.$(function($) {
   $("#multiple-children").appendTo("div#priceset");
 
+  var selectedchildren = $('select#multiple_child').select2('data');
+  hideShowChildren(selectedchildren.text);
+
   $('select#multiple_child').select2().on("change", function(e) {
-    var count = e.added.text;
-    var remaningcount = count + 1;
-    for (i = 1; i <= count; i++) {
-      $('#add-item-row-' + i).removeClass('hiddenElement');
-      $('#add-another-item').removeClass('hiddenElement');
-    }
-    for (i = remaningcount; i <= 25; i++) {
-      $('#add-item-row-' + i).addClass('hiddenElement');
-      var row = $('#add-item-row-' + i);
-      $('input[name^="child_first_name"]', row).val('');
-      $('input[id^="child_last_name"]', row).val('');
-    }
+    var count = parseInt(e.added.text);
+    hideShowChildren(count);
   });
+
+  function hideShowChildren(count) {
+      var remainingcount = count + 1;
+      for (i = 1; i <= count; i++) {
+          $('#add-item-row-' + i).removeClass('hiddenElement');
+          $('#add-another-item').removeClass('hiddenElement');
+      }
+      for (i = remainingcount; i <= 25; i++) {
+          $('#add-item-row-' + i).addClass('hiddenElement');
+          var row = $('#add-item-row-' + i);
+          $('input[name^="child_first_name"]', row).val('');
+          $('input[id^="child_last_name"]', row).val('');
+          $('input[name^="child_dob"]', row).val('');
+          $('input[id^="child_gender"]', row).val('');
+      }
+  }
+
   $('.remove_item').on('click', function(e) {
     e.preventDefault();
-    var row = $(this).closest('div.multiple_childen-row');
+    var row = $(this).closest('div.multiple_children-row');
     $('#add-another-item').show();
     $('input[name^="child_first_name"]', row).val('');
     $('input[id^="child_last_name"]', row).val('');
+    $('input[name^="child_dob"]', row).val('');
+    $('input[id^="child_gender"]', row).val('');
     row.addClass('hiddenElement').fadeOut("slow");
-  });
-
-  $('#add-another-item').on('click', function(e) {
-    e.preventDefault();
-    var hasHidden = $('div.multiple_children-row').hasClass("hiddenElement");
-    if (hasHidden) {
-      var row = $('#multiple_children div.hiddenElement:first');
-      row.fadeIn("slow").removeClass('hiddenElement');
-      row.removeAttr("style");
-      hasHidden = $('div.multiple_children-row').hasClass("hiddenElement");
-    }
-    $('#add-another-item').toggle(hasHidden);
   });
 });
 </script>

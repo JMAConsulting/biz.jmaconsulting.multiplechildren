@@ -196,7 +196,7 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         'child_dob' => ts('Child Birth Date'),
         'child_gender' => ts('Child Gender'),
       ];
-      for ($rowNumber = 1; $rowNumber <= 25; $rowNumber++) {
+      for ($rowNumber = 0; $rowNumber <= 25; $rowNumber++) {
         $children[$rowNumber] = $rowNumber;
         foreach ($fields as $fieldName => $fieldLabel) {
           $name = sprintf("%s[%d]", $fieldName, $rowNumber);
@@ -248,9 +248,28 @@ function multiplechildren_civicrm_postProcess($formName, &$form) {
           'contact_type' => 'Individual', 
           'first_name' => $form->_values['params'][$participantId]['child_first_name'][$i],
           'last_name' => $form->_values['params'][$participantId]['child_last_name'][$i],
+          'birth_date' => $form->_values['params'][$participantId]['child_dob'][$i],
+          'gender' => $form->_values['params'][$participantId]['child_gender'][$i],
         ];
+        $dedupeParams = CRM_Dedupe_Finder::formatParams($childParams, 'Individual');
+        $dedupeParams['check_permission'] = FALSE;
+        $rule = CRM_Core_DAO::singleValueQuery("SELECT max(id) FROM civicrm_dedupe_rule_group WHERE name = 'Child_Rule_10'");
+        $dupes = CRM_Dedupe_Finder::dupesByParams($dedupeParams, 'Individual', NULL, array(), $rule);
+        $cid = CRM_Utils_Array::value('0', $dupes, NULL);
+        $childParams['contact_sub_type'] = 'Child';
+        if ($cid) {
+          $childParams['contact_id'] = $cid;
+        }
         $child = civicrm_api3('Contact', 'create', $childParams);
         $children[] = $child['id'];
+
+        $isFilled = CRM_Core_DAO::executeQuery("SELECT entity_id FROM civicrm_value_newsletter_cu_3 WHERE entity_id IN (" . $child['id'] . ") AND (first_contacted_358 IS NOT NULL OR first_contacted_358 != '')")->fetchAll();
+        if (empty($isFilled)) {
+          civicrm_api3('CustomValue', 'create', [
+            'entity_id' => $child['id'],
+            'custom_29' => date('Ymd'),
+          ]);
+        }
 
         civicrm_api3('Participant', 'create', [
           'contact_id' => $child['id'],
@@ -266,6 +285,7 @@ function multiplechildren_civicrm_postProcess($formName, &$form) {
           $val['master_id'] = $k;
           civicrm_api3('Address', 'create', $address[$k]);
         }
+
 
         if (!empty($form->_values['params'][$participantId]['postal_code-Primary'])) {
 
@@ -283,6 +303,11 @@ function multiplechildren_civicrm_postProcess($formName, &$form) {
         // Create relationship.
         $relType = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', 'Child of', 'id', 'name_a_b');
         createRelationship($child['id'], $parent, $relType);
+      }
+      // Check if contact has child with lead family member. If he doesn't then add first child as lead member.
+      $isLeadFamilyPresent = CRM_Core_DAO::singleValueQuery("SELECT n.lead_family_member__28 FROM civicrm_value_newsletter_cu_3 n INNER JOIN civicrm_relationship r ON n.entity_id = r.contact_id_a WHERE r.relationship_type_id = 1 AND r.contact_id_b = %1 AND n.lead_family_member__28 = 1 LIMIT 1", [1 => [$parent, 'Integer']]);
+      if (empty($isLeadFamilyPresent) && !empty($children[0])) {
+        civicrm_api3('Contact', 'create', ['id' => $children[0], 'custom_28' => 1]);
       }
     }
   }
