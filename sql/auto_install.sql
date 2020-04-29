@@ -50,12 +50,13 @@ CREATE TABLE `civicrm_multiple_children` (
 
 
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Unique MultipleChildren ID',
-     `contact_id` int unsigned    COMMENT 'FK to Contact' 
+     `event_id` int unsigned    COMMENT 'FK to Contact',
+     `multiple_child` int   DEFAULT 0 COMMENT 'Is multiple child?' 
 ,
         PRIMARY KEY (`id`)
  
  
-,          CONSTRAINT FK_civicrm_multiple_children_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE  
+,          CONSTRAINT FK_civicrm_multiple_children_event_id FOREIGN KEY (`event_id`) REFERENCES `civicrm_event`(`id`) ON DELETE CASCADE  
 )    ;
 
  
