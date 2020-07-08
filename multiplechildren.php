@@ -180,7 +180,7 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         $form->setDefaults(['multiple_children' => 0]);
       }
     }
-    if (1 || empty($templateId) && empty($form->getVar('_templateId'))) {
+    if (empty($form->getVar('_templateId'))) {
       // This is not a ministry reportable event, so we show the register multiple children checkbox.
       $form->addYesNo('multiple_children', ts('Register Multiple Children?'));
       CRM_Core_Region::instance('page-body')->add(array(
