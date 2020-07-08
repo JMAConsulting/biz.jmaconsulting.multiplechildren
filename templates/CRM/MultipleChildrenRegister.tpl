@@ -57,7 +57,7 @@
 {literal}
 <script type="text/javascript">
 CRM.$(function($) {
-  $("#multiple-children").appendTo("div#priceset");
+  $("#multiple-children").appendTo("div.custom_pre-section");
 
   var selectedchildren = $('select#multiple_child').select2('data');
   hideShowChildren(selectedchildren.text);

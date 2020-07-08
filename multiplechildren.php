@@ -135,6 +135,27 @@ function multiplechildren_civicrm_entityTypes(&$entityTypes) {
   _multiplechildren_civix_civicrm_entityTypes($entityTypes);
 }
 
+function multiplechildren_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ($formName == "CRM_Event_Form_Registration_Register") {
+    if (!empty($fields['multiple_child'])) {
+      $checkFields = [
+        'child_first_name' => 'Child First Name',
+        'child_last_name' => 'Child Last Name',
+        'child_dob' =>  'Child Birth Date',
+        'child_gender' => 'Child Gender',
+      ];
+      for ($i = 1; $i <= $fields['multiple_child']; $i++) {
+        foreach ($checkFields as $field => $label) {
+          if (empty($fields[$field][$i])) {
+            $errors[$field . '[' . $i . ']'] = ts($label . ' is a required field');
+          }
+        }
+      }
+    }
+  }
+}
+
+
 /**
  * Implements hook_civicrm_buildForm().
  */
