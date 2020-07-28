@@ -203,11 +203,12 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
     $childPrice = $maxTickets = NULL;
     if (!empty($priceSetId)) {
       $childPrice = CRM_Core_DAO::executeQuery("SELECT id FROM civicrm_price_field WHERE name LIKE '%Child%' AND price_set_id = %1", [1 => [$priceSetId, "Integer"]])->fetchAll()[0]['id'];
+      $parentPrice = CRM_Core_DAO::executeQuery("SELECT id FROM civicrm_price_field WHERE name LIKE '%Parent%' AND price_set_id = %1", [1 => [$priceSetId, "Integer"]])->fetchAll()[0]['id'];
     }
     if ($childPrice) {
       $maxTickets = CRM_Core_DAO::singleValueQuery("SELECT max_value FROM civicrm_max_tickets WHERE price_field_id = %1", [1 => [$childPrice, "Integer"]]);
     }
-    if ($isActive && (empty($childPrice) || !$maxTickets)) {
+    if ($isActive && (empty($childPrice) || !$maxTickets) && !empty($parentPrice)) {
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/MultipleChildrenRegister.tpl',
       ));
@@ -233,7 +234,7 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
         }
       }
       $form->add('select', 'multiple_child',
-        ts('Are you bringing children to this event? If so, how many?'), $children, FALSE, array('class' => 'crm-select2 ')
+        ts('How many children with ASD are in your family?'), $children, FALSE, array('class' => 'crm-select2 ')
       );
     }
   }
