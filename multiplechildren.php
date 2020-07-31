@@ -135,6 +135,29 @@ function multiplechildren_civicrm_entityTypes(&$entityTypes) {
   _multiplechildren_civix_civicrm_entityTypes($entityTypes);
 }
 
+function multiplechildren_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ($formName == "CRM_Event_Form_Registration_Register") {
+    $priceSetId = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $form->_eventId);
+
+    if (!empty($priceSetId)) {
+      $parentPrice = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_price_field WHERE name LIKE '%Parent%' AND price_set_id = %1", [1 => [$priceSetId, "Integer"]]);
+    }
+    if (!empty($parentPrice) && !empty($fields['price_' . $parentPrice])) {
+      $checkFields = [
+        'child_first_name' => 'Child First Name',
+        'child_last_name' => 'Child Last Name',
+        'child_dob' =>  'Child Birth Date',
+        'child_gender' => 'Child Gender',
+      ];
+      foreach ($checkFields as $field => $label) {
+        if (empty($fields[$field][1])) {
+          $errors[$field . '[1]'] = ts($label . ' is a required field');
+        }
+      }
+    }
+  }
+}
+
 /**
  * Implements hook_civicrm_buildForm().
  */

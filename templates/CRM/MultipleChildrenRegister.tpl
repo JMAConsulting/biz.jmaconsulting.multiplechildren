@@ -52,7 +52,7 @@
 {section name='i' start=2 loop=25}
     {assign var='rowNumber' value=$smarty.section.i.index}
     <div id="add-item-row-{$rowNumber}" class="multiple_children-row hiddenElement {cycle values="odd-row,even-row"}">
-        <fieldset><legend>{ts}Child {$rowNumber}{/ts}</legend>
+        <fieldset><legend>{ts}Child {$rowNumber} with ASD{/ts}</legend>
             <div class="crm-section">
                 <div class="label">
                     {$form.child_first_name.$rowNumber.label}
