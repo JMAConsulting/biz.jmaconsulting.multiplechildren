@@ -202,14 +202,26 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
     }
     $priceSetId = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $form->_eventId);
     // Check if child price set is inactive.
-    $childPrice = $maxTickets = NULL;
+    $childPrice = $maxTickets = $count = NULL;
+    $enableChildren = FALSE;
     if (!empty($priceSetId)) {
       $childPrice = CRM_Core_DAO::executeQuery("SELECT id FROM civicrm_price_field WHERE name LIKE '%Child%' AND price_set_id = %1", [1 => [$priceSetId, "Integer"]])->fetchAll()[0]['id'];
     }
     if ($childPrice) {
+      $count = getChildCurrentCount($childPrice, $form->_eventId);
       $maxTickets = CRM_Core_DAO::singleValueQuery("SELECT max_value FROM civicrm_max_tickets WHERE price_field_id = %1", [1 => [$childPrice, "Integer"]]);
     }
-    if ($isActive && (empty($childPrice) || !$maxTickets)) {
+    if (!empty($maxTickets) && !empty($count)) {
+      if (($maxTickets - $count) <= 0) {
+        // This means the number of child tickets have been exhausted by a limit on the child price field.
+        $enableChildren = TRUE;
+      }
+    }
+    // Also check if max tickets has been implicitly set to zero.
+    if ($maxTickets == '0') {
+      $enableChildren = TRUE;
+    }
+    if ($isActive && (empty($childPrice) || $enableChildren)) {
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/MultipleChildrenRegister.tpl',
       ));
@@ -240,6 +252,22 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
       $form->assign('childSubmitted', json_encode($submittedValues));
     }
   }
+}
+
+function getChildCurrentCount($priceField, $eventId) {
+  $sql = "SELECT SUM(participant_count)
+    FROM civicrm_event e
+    INNER JOIN civicrm_participant p ON p.event_id = e.id
+    INNER JOIN civicrm_participant_payment pp ON pp.participant_id = p.id
+    INNER JOIN civicrm_line_item l ON l.contribution_id = pp.contribution_id
+    WHERE l.price_field_id = %1
+    AND e.id = %2
+    AND p.status_id IN (1)";
+  $params = [
+    1 => [$priceField, 'Integer'],
+    2 => [$eventId, 'Integer'],
+  ];
+  return CRM_Core_DAO::singleValueQuery($sql, $params);
 }
 
 function multiplechildren_civicrm_post($op, $objectName, $objectId, &$objectRef) {
