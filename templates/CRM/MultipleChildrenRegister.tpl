@@ -10,10 +10,49 @@
   </div>
 </div>
 <div class="clear"></div>
-{section name='i' start=1 loop=25}
+    <div id="first-child">
+        <fieldset><legend>{ts}Child 1{/ts}</legend>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_first_name.1.label}
+                </div>
+                <div class="content">
+                    {$form.child_first_name.1.html}
+                </div>
+            </div>
+            <br/>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_last_name.1.label}
+                </div>
+                <div class="content">
+                    {$form.child_last_name.1.html}
+                </div>
+            </div>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_dob.1.label}
+                </div>
+                <div class="content">
+                    {$form.child_dob.1.html}
+                </div>
+            </div>
+            <div class="crm-section">
+                <div class="label">
+                    {$form.child_gender.1.label}
+                </div>
+                <div class="content">
+                    {$form.child_gender.1.html}
+                </div>
+            </div>
+            <div><span class="add_another_item crm-hover-button" style="float:right;font-weight:bold;padding:10px;"><a href=#>{ts}Add another child{/ts}</a></span></div>
+        </fieldset>
+    </div>
+    <div id="children-with-asd">
+{section name='i' start=2 loop=25}
     {assign var='rowNumber' value=$smarty.section.i.index}
     <div id="add-item-row-{$rowNumber}" class="multiple_children-row hiddenElement {cycle values="odd-row,even-row"}">
-        <fieldset><legend>{ts}Child {$rowNumber}{/ts}</legend>
+        <fieldset><legend>{ts}Child {$rowNumber} with ASD{/ts}</legend>
             <div class="crm-section">
                 <div class="label">
                     {$form.child_first_name.$rowNumber.label}
@@ -47,10 +86,14 @@
                     {$form.child_gender.$rowNumber.html}
                 </div>
             </div>
-            <div><a href=# class="remove_item crm-hover-button" style="float:right;"><b>{ts}Remove{/ts}</b></a></div>
+            <div><span class="add_another_item crm-hover-button" style="float:right;font-weight:bold;padding:10px;"><a href=#>{ts}Add another child{/ts}</a></span></div>
+            {if $rowNumber neq 1}
+            <div><a href=# class="remove_item crm-hover-button" style="float:right;padding:10px;"><b>{ts}Remove{/ts}</b></a></div>
+            {/if}
         </fieldset>
     </div>
 {/section}
+    </div>
 </fieldset>
 </div>
 
@@ -59,29 +102,23 @@
 CRM.$(function($) {
   $("#multiple-children").appendTo("div.custom_pre-section");
 
-  var selectedchildren = $('select#multiple_child').select2('data');
-  hideShowChildren(selectedchildren.text);
+  var submittedRows = $.parseJSON('{/literal}{$childSubmitted}{literal}');
 
-  $('select#multiple_child').select2().on("change", function(e) {
-    var count = parseInt(e.added.text);
-    hideShowChildren(count);
+  // after form rule validation when page reloads then show only those items which were chosen and hide others
+  $.each(submittedRows, function(e, num) {
+      $('#add-item-row-' + num).removeClass('hiddenElement');
   });
 
-  function hideShowChildren(count) {
-      var remainingcount = count + 1;
-      for (i = 1; i <= count; i++) {
-          $('#add-item-row-' + i).removeClass('hiddenElement');
-          $('#add-another-item').removeClass('hiddenElement');
+  $('.add_another_item').on('click', function(e) {
+      e.preventDefault();
+      var hasHidden = $('div.multiple_children-row').hasClass("hiddenElement");
+      if (hasHidden) {
+          var row = $('#children-with-asd div.hiddenElement:first');
+          $('div.hiddenElement:first, #children-with-asd').fadeIn("slow").removeClass('hiddenElement');
+          hasHidden = $('div.multiple_children-row').hasClass("hiddenElement");
       }
-      for (i = remainingcount; i <= 25; i++) {
-          $('#add-item-row-' + i).addClass('hiddenElement');
-          var row = $('#add-item-row-' + i);
-          $('input[name^="child_first_name"]', row).val('');
-          $('input[id^="child_last_name"]', row).val('');
-          $('input[name^="child_dob"]', row).val('');
-          $('input[id^="child_gender"]', row).val('');
-      }
-  }
+      $('.add_another_item').toggle(hasHidden);
+  });
 
   $('.remove_item').on('click', function(e) {
     e.preventDefault();
