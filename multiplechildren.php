@@ -137,6 +137,12 @@ function multiplechildren_civicrm_entityTypes(&$entityTypes) {
 
 function multiplechildren_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   if ($formName == "CRM_Event_Form_Registration_Register") {
+    $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
+    $mulChild->event_id = $form->_eventId;
+    $mulChild->find(TRUE);
+    if (empty($mulChild->multiple_child)) {
+      return;
+    }
     $priceSetId = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $form->_eventId);
 
     if (!empty($priceSetId)) {
