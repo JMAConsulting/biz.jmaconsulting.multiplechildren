@@ -137,6 +137,8 @@ function multiplechildren_civicrm_entityTypes(&$entityTypes) {
 
 function multiplechildren_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   if ($formName == "CRM_Event_Form_Registration_Register") {
+    // Skipping form rule for the time being until directed by AO.
+    return;
     $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
     $mulChild->event_id = $form->_eventId;
     $mulChild->find(TRUE);
@@ -169,31 +171,14 @@ function multiplechildren_civicrm_validateForm($formName, &$fields, &$files, &$f
  */
 function multiplechildren_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Event_Form_ManageEvent_EventInfo") {
-    $templateId = NULL;
-    if (!empty($form->_id)) {
-      $template = civicrm_api3('Event', 'get', [
-        'id' => $form->_id,
-        'return.custom_' . MINISTRY => 1,
-      ])['values'][$form->_id];
-      if (!empty($template['custom_' . MINISTRY])) {
-        $templateId = $template['custom_' . MINISTRY];
-      }
-      $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
-      $mulChild->event_id = $form->_id;
-      $mulChild->find(TRUE);
-      if ($mulChild->multiple_child) {
-        $form->setDefaults(['multiple_children' => 1]);
-      }
-      else {
-        $form->setDefaults(['multiple_children' => 0]);
-      }
-    }
     if (empty($form->getVar('_isTemplate'))) {
       // This is not a ministry reportable event, so we show the register multiple children checkbox.
       $form->addYesNo('multiple_children', ts('Register Multiple Children?'));
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/MultipleChildren.tpl',
       ));
+      // Set this to default = TRUE.
+      $form->setDefaults(['multiple_children' => 1]);
     }
   }
   if ($formName == "CRM_Event_Form_Registration_Register") {
