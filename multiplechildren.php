@@ -177,8 +177,21 @@ function multiplechildren_civicrm_buildForm($formName, &$form) {
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/MultipleChildren.tpl',
       ));
+    }
+    if (empty($form->_id)) {
       // Set this to default = TRUE.
       $form->setDefaults(['multiple_children' => 1]);
+    }
+    else {
+      $mulChild = new CRM_Multiplechildren_DAO_MultipleChildren();
+      $mulChild->event_id = $form->_id;
+      $mulChild->find(TRUE);
+      if ($mulChild->multiple_child) {
+        $form->setDefaults(['multiple_children' => 1]);
+      }
+      else {
+        $form->setDefaults(['multiple_children' => 0]);
+      }
     }
   }
   if ($formName == "CRM_Event_Form_Registration_Register") {
