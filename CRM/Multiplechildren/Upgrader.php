@@ -68,6 +68,23 @@ class CRM_Multiplechildren_Upgrader extends CRM_Multiplechildren_Upgrader_Base {
     return TRUE;
   } // */
 
+  /**
+   * Example: Run a couple simple queries.
+   *
+   * @return TRUE on success
+   * @throws Exception
+   */
+  public function upgrade_1100() {
+  $this->ctx->log->info('Applying update 1100');
+  $sql = "INSERT INTO civicrm_multiple_children (event_id, multiple_child)
+    SELECT e.id, 1
+    FROM civicrm_event e
+    LEFT JOIN civicrm_multiple_children m ON m.event_id = e.id
+    WHERE m.event_id IS NULL AND e.is_template <> 1";
+  CRM_Core_DAO::executeQuery($sql);
+  CRM_Core_DAO::executeQuery("UPDATE civicrm_multiple_children SET multiple_child = 1");
+  return TRUE;
+  }
 
   /**
    * Example: Run an external SQL script.
